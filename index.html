@@ -78,6 +78,245 @@
         <div class="col-sm-8 blog-main">
           
   
+    <article id="post-tech/RPC-framework/4" class="article article-type-post" itemscope itemprop="blogPost">
+
+  <header class="article-header">
+    
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/05/15/tech/RPC-framework/4/">一个简单的RPC框架-撮合</a>
+    </h1>
+  
+
+
+  </header>
+
+  <div class="article-meta">
+    <div class="article-datetime">
+  <a href="/2016/05/15/tech/RPC-framework/4/" class="article-date"><time datetime="2016-05-14T16:00:00.000Z" itemprop="datePublished">2016-05-15</time></a>
+</div>
+
+    
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/c/">技术</a>
+  </div>
+
+
+  </div>
+  <div class="article-inner">
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>我们前面两个练习中已经完成了一个简单的Socket程序和一个简单的java代理程序。在Socket的代码中，我们实现了两个服务器之间的通信，前提是知道对方的IP和暴露的端口。在代理程序中，我们可以动态生成一个类的实现。<br>如果我们使用一个SocketServer去接收数据，把接收来的数据使用本地的服务进行处理，处理完成后，将处理的结果返回到Client中去。如果Client再解析出来这部分返回的数据（当然要基于对数据的格式处理），这样就可以完成一个远程方法调用的过程了。<br>首先我们假设我们的数据都使用Json的方式来传输，使用Json数据做一个远程调用的示例。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SocketServerTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        ServerSocket s = <span class="keyword">new</span> ServerSocket(<span class="number">8000</span>);</span><br><span class="line">        Socket server = s.accept();</span><br><span class="line">        Reader reader = <span class="keyword">new</span> InputStreamReader(server.getInputStream());</span><br><span class="line">        <span class="keyword">char</span>[] chars = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="number">256</span>];</span><br><span class="line">        StringBuilder sb = <span class="keyword">new</span> StringBuilder();</span><br><span class="line">        <span class="keyword">int</span> len = -<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">while</span> ((len=reader.read(chars)) != -<span class="number">1</span>) &#123;  </span><br><span class="line">            sb.append(<span class="keyword">new</span> String(chars, <span class="number">0</span>, len));  </span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(sb);</span><br><span class="line">        HelloService hello = <span class="keyword">new</span> HelloServiceImpl();</span><br><span class="line">        String result = hello.sayHello(sb.toString());</span><br><span class="line">        </span><br><span class="line">        Writer writer = <span class="keyword">new</span> OutputStreamWriter(server.getOutputStream()); </span><br><span class="line">        writer.write(<span class="string">"Test"</span>);</span><br><span class="line">        writer.flush();</span><br><span class="line">    &#125;</span><br><span class="line">&#125; </span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SocketClient</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> UnknownHostException, IOException </span>&#123;</span><br><span class="line">        Socket client = <span class="keyword">new</span> Socket(<span class="string">"localhost"</span>, <span class="number">8000</span>);</span><br><span class="line">        OutputStream os = client.getOutputStream();</span><br><span class="line">        Writer writer = <span class="keyword">new</span> OutputStreamWriter(client.getOutputStream()); </span><br><span class="line">        writer.write(<span class="string">"Test"</span>);</span><br><span class="line">        writer.flush();</span><br><span class="line">        Reader reader = <span class="keyword">new</span> InputStreamReader(client.getInputStream());</span><br><span class="line">        <span class="keyword">char</span>[] chars = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="number">256</span>];</span><br><span class="line">        StringBuilder sb = <span class="keyword">new</span> StringBuilder();</span><br><span class="line">        <span class="keyword">int</span> len = -<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">while</span> ((len=reader.read(chars)) != -<span class="number">1</span>) &#123;  </span><br><span class="line">            sb.append(<span class="keyword">new</span> String(chars, <span class="number">0</span>, len));  </span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(sb.toString());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>代码完成了，但是发现控制台什么都不输出，这是什么原因呢？因为在客户端还没有关闭的时候，Server端其实还是一直在等待客户端的继续输入。那么这个问题就意味着，我们在进行soket编程的时候需要在客户端完成所有输入之后，显示地结束掉自己的输入，这种输入的结束，并不是关闭输入流，而是通过特殊的字符标识或者特殊的约定完成的，比如我们可以在文件的末位添加上EOF，标识我们的输入结束了。改进后的代码如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SocketServerTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        ServerSocket s = <span class="keyword">new</span> ServerSocket(<span class="number">8000</span>);</span><br><span class="line">        Socket server = s.accept();</span><br><span class="line">        Reader reader = <span class="keyword">new</span> InputStreamReader(server.getInputStream());</span><br><span class="line">        <span class="keyword">char</span>[] chars = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="number">256</span>];</span><br><span class="line">        StringBuilder sb = <span class="keyword">new</span> StringBuilder();</span><br><span class="line">        <span class="keyword">int</span> len = -<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">int</span> index;</span><br><span class="line">        String temp;</span><br><span class="line">        <span class="keyword">while</span> ((len=reader.read(chars)) != -<span class="number">1</span>) &#123;  </span><br><span class="line">            temp = <span class="keyword">new</span> String(chars, <span class="number">0</span>, len);  </span><br><span class="line">            <span class="keyword">if</span> ((index = temp.indexOf(<span class="string">"EOF"</span>)) != -<span class="number">1</span>) &#123;  </span><br><span class="line">               sb.append(temp.substring(<span class="number">0</span>, index));  </span><br><span class="line">               <span class="keyword">break</span>;  </span><br><span class="line">            &#125;  </span><br><span class="line">            sb.append(<span class="keyword">new</span> String(chars, <span class="number">0</span>, len)); </span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(sb);</span><br><span class="line">        HelloService hello = <span class="keyword">new</span> HelloServiceImpl();</span><br><span class="line">        String result = hello.sayHello(sb.toString());</span><br><span class="line">        </span><br><span class="line">        Writer writer = <span class="keyword">new</span> OutputStreamWriter(server.getOutputStream()); </span><br><span class="line">        writer.write(result);</span><br><span class="line">        writer.write(<span class="string">"EOF"</span>);</span><br><span class="line">        writer.flush();</span><br><span class="line">        server.close();</span><br><span class="line">        s.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125; </span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SocketClient</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> UnknownHostException, IOException </span>&#123;</span><br><span class="line">        Socket client = <span class="keyword">new</span> Socket(<span class="string">"localhost"</span>, <span class="number">8000</span>);</span><br><span class="line">        Writer writer = <span class="keyword">new</span> OutputStreamWriter(client.getOutputStream()); </span><br><span class="line">        writer.write(<span class="string">"Test"</span>);</span><br><span class="line">        writer.write(<span class="string">"EOF"</span>);</span><br><span class="line">        writer.flush();</span><br><span class="line">        </span><br><span class="line">        Reader reader = <span class="keyword">new</span> InputStreamReader(client.getInputStream());</span><br><span class="line">        <span class="keyword">char</span>[] chars = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="number">256</span>];</span><br><span class="line">        StringBuilder sb = <span class="keyword">new</span> StringBuilder();</span><br><span class="line">        <span class="keyword">int</span> len = -<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">int</span> index;</span><br><span class="line">        String temp;</span><br><span class="line">        <span class="keyword">while</span> ((len=reader.read(chars)) != -<span class="number">1</span>) &#123;  </span><br><span class="line">            temp = <span class="keyword">new</span> String(chars, <span class="number">0</span>, len);  </span><br><span class="line">            <span class="keyword">if</span> ((index = temp.indexOf(<span class="string">"EOF"</span>)) != -<span class="number">1</span>) &#123;  </span><br><span class="line">               sb.append(temp.substring(<span class="number">0</span>, index));  </span><br><span class="line">               <span class="keyword">break</span>;  </span><br><span class="line">            &#125;  </span><br><span class="line">            sb.append(<span class="keyword">new</span> String(chars, <span class="number">0</span>, len)); </span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(sb);</span><br><span class="line">        client.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>现在已经完成了通信的问题，已经实现了客户端发送socket，服务端接收到请求后，调用本地方法，返回给客户端。<br>但是这种实现方式有一个明显的毛病，就是需要客户端将请求服务端的数据显示地传输过去，实际项目中，我们也可以这样做，但是如果每个请求都需要这样做的话，我们就会很痛苦，每次需要将数据转换为字符串，发送soket。有没有更加方便的方式进行呢？我们期望调用远程的方法就像调用我们本地的方法一样，而本地没有任何的方法实现的细节。根据上面的提示，我想你可能知道了，就是使用代理的方式进行。使用代理将请求方法的参数发给服务端，将服务端的返回转换为返回参数返回。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloServiceProxy</span> <span class="keyword">implements</span> <span class="title">InvocationHandler</span></span>&#123;</span><br><span class="line">    <span class="annotation">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> deal(args[<span class="number">0</span>].toString());</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">private</span> String <span class="title">deal</span><span class="params">(String message)</span> <span class="keyword">throws</span> UnknownHostException, IOException</span>&#123;</span><br><span class="line">        Socket client = <span class="keyword">new</span> Socket(<span class="string">"localhost"</span>, <span class="number">8000</span>);</span><br><span class="line">        Writer writer = <span class="keyword">new</span> OutputStreamWriter(client.getOutputStream()); </span><br><span class="line">        writer.write(message);</span><br><span class="line">        writer.write(<span class="string">"EOF"</span>);</span><br><span class="line">        writer.flush();</span><br><span class="line">        </span><br><span class="line">        Reader reader = <span class="keyword">new</span> InputStreamReader(client.getInputStream());</span><br><span class="line">        <span class="keyword">char</span>[] chars = <span class="keyword">new</span> <span class="keyword">char</span>[<span class="number">256</span>];</span><br><span class="line">        StringBuilder sb = <span class="keyword">new</span> StringBuilder();</span><br><span class="line">        <span class="keyword">int</span> len = -<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">int</span> index;</span><br><span class="line">        String temp;</span><br><span class="line">        <span class="keyword">while</span> ((len=reader.read(chars)) != -<span class="number">1</span>) &#123;  </span><br><span class="line">            temp = <span class="keyword">new</span> String(chars, <span class="number">0</span>, len);  </span><br><span class="line">            <span class="keyword">if</span> ((index = temp.indexOf(<span class="string">"EOF"</span>)) != -<span class="number">1</span>) &#123;  </span><br><span class="line">               sb.append(temp.substring(<span class="number">0</span>, index));  </span><br><span class="line">               <span class="keyword">break</span>;  </span><br><span class="line">            &#125;  </span><br><span class="line">            sb.append(<span class="keyword">new</span> String(chars, <span class="number">0</span>, len)); </span><br><span class="line">        &#125;</span><br><span class="line">        client.close();</span><br><span class="line">        <span class="keyword">return</span> sb.toString();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;  </span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SocketClient</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> UnknownHostException, IOException </span>&#123;</span><br><span class="line">        HelloService hello = (HelloService)Proxy.newProxyInstance(HelloService.class.getClassLoader(), <span class="keyword">new</span> Class[]&#123;HelloService.class&#125;, <span class="keyword">new</span> HelloServiceProxy());</span><br><span class="line">        String result = hello.sayHello(<span class="string">"Test"</span>);</span><br><span class="line">        System.out.println(result);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>代码如上， 这样我们就完成了一个糅合了TCP和动态代理的RPC调用了。接下来需要思考的问题，就是如何将这种调用整合为一个简单的框架。</p>
+
+      
+    </div>
+
+    
+      
+
+    
+
+    <footer class="article-footer">
+      <a data-url="http://shanatos.com/2016/05/15/tech/RPC-framework/4/" data-id="cipcsr7zv001egwtsdsczgikk" class="article-share-link">
+        <i class="fa fa-share"></i> Share
+      </a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RPC/">RPC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/java/">java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/技术总结/">技术总结</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/框架/">框架</a></li></ul>
+
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-tech/RPC-framework/3" class="article article-type-post" itemscope itemprop="blogPost">
+
+  <header class="article-header">
+    
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/05/10/tech/RPC-framework/3/">一个简单的RPC框架-动态代理</a>
+    </h1>
+  
+
+
+  </header>
+
+  <div class="article-meta">
+    <div class="article-datetime">
+  <a href="/2016/05/10/tech/RPC-framework/3/" class="article-date"><time datetime="2016-05-09T16:00:00.000Z" itemprop="datePublished">2016-05-10</time></a>
+</div>
+
+    
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/c/">技术</a>
+  </div>
+
+
+  </div>
+  <div class="article-inner">
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Spring中的概念AOP（Aspect Orient Programming)，面向方面编程，专门用于处理系统中分布于各个模块的交叉关注点的问题，常常使用AOP来处理一些具有横切性质的系统级服务，如事务管理、安全检查、缓存、对象池管理等。AOP实现的关键就在于AOP框架自动创建的AOP代理。代理主要有静态代理和动态代理，静态代理的技术主要介绍AspectJ，动态代理介绍java的动态代理和Cglib的应用。<br>AspectJ这种静态代理技术需要在编译的时候增强我们的类，需要显示指定使用ajc去编译所有的类，这样，在源码层级上，就可以将交叉关注的代码和业务代码进行解耦。这里不再赘述AspectJ的其他内容了，只需要知道，如果使用AspectJ，相当于利用代码生成工具动态修改了你原先接口中的方法，只是在源码管理上，两者是独立的。这在一些需要动态修改的时候，是不能满足的。当然，你也可以说，静态织入部分代码，这些代码通过调用配置服务的方式获取一些配置，也可以做到一定的配置功能。但这个不深入探究了。<br>下面重点介绍java的动态代理和cglib对动态代理的封装<br>首先我们先设定一个简单的接口和实现<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">HelloService</span> </span>&#123;</span><br><span class="line">    <span class="function">String <span class="title">sayHello</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HelloServiceImpl</span> <span class="keyword">implements</span> <span class="title">HelloService</span> </span>&#123;</span><br><span class="line">    <span class="annotation">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">sayHello</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"inside"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"Hello!"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后我们写一个java动态代理类<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JavaDynProxy</span> <span class="keyword">implements</span> <span class="title">InvocationHandler</span></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Object target;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">getProxyInstance</span><span class="params">(Object target)</span></span>&#123;  </span><br><span class="line">        <span class="keyword">this</span>.target = target;  </span><br><span class="line">        <span class="keyword">return</span> Proxy.newProxyInstance(target.getClass().getClassLoader(),   </span><br><span class="line">                target.getClass().getInterfaces(), <span class="keyword">this</span>);  </span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="annotation">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"before target method..."</span>  );</span><br><span class="line">        Object result = method.invoke(target, args);</span><br><span class="line">        System.out.println(<span class="string">"after target method..."</span>  );</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>之后，我们使用代理类来代理运行我们的程序<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JavaDynProxyTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        JavaDynProxy proxy = <span class="keyword">new</span> JavaDynProxy();  </span><br><span class="line">        HelloService hello = (HelloService)proxy.getProxyInstance(<span class="keyword">new</span> HelloServiceImpl());  </span><br><span class="line">        String s = hello.sayHello();  </span><br><span class="line">        System.out.println(s);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这样我们通过动态代理，改变了HelloServiceImpl的行为，在这个行为执行前和执行后，都可以执行部分我们感兴趣的代码。甚至，我们还可以更进一步，不调用被代理的对象的任何内容，直接模拟出一个返回。<br>这里也可以使用Cglib进行代理服务，代码如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CglibProxy</span> <span class="keyword">implements</span> <span class="title">MethodInterceptor</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> Object target;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">getProxyInstance</span><span class="params">(Object target)</span> </span>&#123;    </span><br><span class="line">        <span class="keyword">this</span>.target = target;  </span><br><span class="line">        Enhancer enhancer = <span class="keyword">new</span> Enhancer();    </span><br><span class="line">        enhancer.setSuperclass(<span class="keyword">this</span>.target.getClass());    </span><br><span class="line">        enhancer.setCallback(<span class="keyword">this</span>);</span><br><span class="line">        <span class="keyword">return</span> enhancer.create();</span><br><span class="line">    &#125; </span><br><span class="line">    <span class="annotation">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">intercept</span><span class="params">(Object target, Method method, Object[] args, MethodProxy proxy)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"before target method..."</span>);  </span><br><span class="line">        Object result = proxy.invokeSuper(target, args);  </span><br><span class="line">        System.out.println(<span class="string">"after target method..."</span>);  </span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>注意java的动态代理和cglib代理中，实际上生成一个代理，只需要一个处理切面的类（继承自MethodIntercepter即可）以及需要代理的class类即可，被代理类可以不存在。也就是说，当没有target的时候，你完全可以忽略调用被代理方法的地方，我们可以只声明接口，不声明任何实现，也可以通过java的动态代理生成一个实现。</p>
+
+      
+    </div>
+
+    
+      
+
+    
+
+    <footer class="article-footer">
+      <a data-url="http://shanatos.com/2016/05/10/tech/RPC-framework/3/" data-id="cipcsr7zy001mgwtsflbb9gy0" class="article-share-link">
+        <i class="fa fa-share"></i> Share
+      </a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RPC/">RPC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/java/">java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/技术总结/">技术总结</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/框架/">框架</a></li></ul>
+
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-tech/RPC-framework/1" class="article article-type-post" itemscope itemprop="blogPost">
+
+  <header class="article-header">
+    
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/05/01/tech/RPC-framework/1/">一个简单的RPC框架-导读</a>
+    </h1>
+  
+
+
+  </header>
+
+  <div class="article-meta">
+    <div class="article-datetime">
+  <a href="/2016/05/01/tech/RPC-framework/1/" class="article-date"><time datetime="2016-04-30T16:00:00.000Z" itemprop="datePublished">2016-05-01</time></a>
+</div>
+
+    
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/c/">技术</a>
+  </div>
+
+
+  </div>
+  <div class="article-inner">
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>最开始的时候，我们实现所有的业务功能，可以都集中在一个java类中，但是随着业务的不断复杂化，以及需求的变更，我们需要隔离各个模块之间的调用关系，让整体的逻辑不至于混乱，于是我们开始使用工程化的方式取管理我们的代码，之后使用多个工程组织代码，之后使用分布式的服务组织我们的逻辑。我们做的这一切，让变化被隔离起来，当业务需要变动的时候，可以在程序中更快地应用变动。<br>
+        
+          <p class="article-more-link">
+            <a class="btn btn-primary" href="/2016/05/01/tech/RPC-framework/1/#more">查看全文</a>
+          </p>
+        
+      
+    </div>
+
+    
+
+    <footer class="article-footer">
+      <a data-url="http://shanatos.com/2016/05/01/tech/RPC-framework/1/" data-id="cipcsr804001ygwtsrlezinlw" class="article-share-link">
+        <i class="fa fa-share"></i> Share
+      </a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RPC/">RPC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/java/">java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/技术总结/">技术总结</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/框架/">框架</a></li></ul>
+
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-tech/RPC-framework/2" class="article article-type-post" itemscope itemprop="blogPost">
+
+  <header class="article-header">
+    
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/05/01/tech/RPC-framework/2/">一个简单的RPC框架-基础篇</a>
+    </h1>
+  
+
+
+  </header>
+
+  <div class="article-meta">
+    <div class="article-datetime">
+  <a href="/2016/05/01/tech/RPC-framework/2/" class="article-date"><time datetime="2016-04-30T16:00:00.000Z" itemprop="datePublished">2016-05-01</time></a>
+</div>
+
+    
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/c/">技术</a>
+  </div>
+
+
+  </div>
+  <div class="article-inner">
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>这一节主要讲解RPC的需要知道的一些基础性的代码。<br>网络通信是我们在开发程序代码的时候所不可避免的，我们经常使用TCP/IP协议进行网络通信，java内置的ServerSocket可以很方便地实现一个SocketServer。关于TCP的协议内容这里不做过多的介绍了，下面是一个java的Socket编程的例子。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.io.InputStream;</span><br><span class="line"><span class="keyword">import</span> java.net.ServerSocket;</span><br><span class="line"><span class="keyword">import</span> java.net.Socket;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SocketServerTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        ServerSocket s = <span class="keyword">new</span> ServerSocket(<span class="number">8000</span>);</span><br><span class="line">        Socket server = s.accept();</span><br><span class="line">        InputStream in = server.getInputStream();</span><br><span class="line">        <span class="keyword">byte</span>[] b = <span class="keyword">new</span> <span class="keyword">byte</span>[<span class="number">256</span>];</span><br><span class="line">        StringBuilder sb = <span class="keyword">new</span> StringBuilder();</span><br><span class="line">        <span class="keyword">int</span> len = -<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">while</span>((len = in.read(b)) != -<span class="number">1</span>)&#123;</span><br><span class="line">            System.out.println(<span class="keyword">new</span> String(b, <span class="string">"UTF-8"</span>));</span><br><span class="line">            sb.append(<span class="keyword">new</span> String(b, <span class="string">"UTF-8"</span>));</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(sb);</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这里需要注意的是<code>s.accept()</code>方法在有数据进来的时候会一直阻塞。我们使用了一个256字节的buffer来接收客户端的请求，并且将这些请求打印出来。这就是这个类所做的所有的事情。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.IOException;</span><br><span class="line"><span class="keyword">import</span> java.io.OutputStream;</span><br><span class="line"><span class="keyword">import</span> java.net.Socket;</span><br><span class="line"><span class="keyword">import</span> java.net.UnknownHostException;</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SocketClient</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> UnknownHostException, IOException </span>&#123;</span><br><span class="line">        Socket client = <span class="keyword">new</span> Socket(<span class="string">"localhost"</span>, <span class="number">8000</span>);</span><br><span class="line">        OutputStream os = client.getOutputStream();</span><br><span class="line">        os.write(<span class="string">"abcd1234中文"</span>.getBytes());</span><br><span class="line">        os.flush();</span><br><span class="line">        client.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>这样通过上面的两段程序，我们得到了一个在机器与机器之间通讯的方法。要知道，这种TCP的通讯形式是不依赖于语言的，所以如果你知道对方机器的IP和端口，你就可以向对方发一个消息。同样，也可以收到对方返回的消息。</p>
+
+      
+    </div>
+
+    
+      
+
+    
+
+    <footer class="article-footer">
+      <a data-url="http://shanatos.com/2016/05/01/tech/RPC-framework/2/" data-id="cipcsr801001sgwtsbt2l4tqq" class="article-share-link">
+        <i class="fa fa-share"></i> Share
+      </a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RPC/">RPC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/java/">java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/技术总结/">技术总结</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/框架/">框架</a></li></ul>
+
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-tech/信息系统问题排查" class="article article-type-post" itemscope itemprop="blogPost">
 
   <header class="article-header">
@@ -120,7 +359,7 @@
     
 
     <footer class="article-footer">
-      <a data-url="http://shanatos.com/2016/04/27/tech/信息系统问题排查/" data-id="cink9j7bu0012dctsj6be383g" class="article-share-link">
+      <a data-url="http://shanatos.com/2016/04/27/tech/信息系统问题排查/" data-id="cipcsr7zp0012gwtsw0o4b9fc" class="article-share-link">
         <i class="fa fa-share"></i> Share
       </a>
       
@@ -187,7 +426,7 @@
     
 
     <footer class="article-footer">
-      <a data-url="http://shanatos.com/2016/03/14/thinking/从《大众经济学》开始的思考/" data-id="cink9j7bj000mdctsjjyaj8fj" class="article-share-link">
+      <a data-url="http://shanatos.com/2016/03/14/thinking/从《大众经济学》开始的思考/" data-id="cipcsr7zc000mgwtswqrm3rn5" class="article-share-link">
         <i class="fa fa-share"></i> Share
       </a>
       
@@ -245,7 +484,7 @@
     
 
     <footer class="article-footer">
-      <a data-url="http://shanatos.com/2015/12/25/thinking/从钢铁侠到支付宝/" data-id="cink9j7bh000adctsvmjs6n8f" class="article-share-link">
+      <a data-url="http://shanatos.com/2015/12/25/thinking/从钢铁侠到支付宝/" data-id="cipcsr7z9000agwtsy1dzgw4c" class="article-share-link">
         <i class="fa fa-share"></i> Share
       </a>
       
@@ -304,7 +543,7 @@
     
 
     <footer class="article-footer">
-      <a data-url="http://shanatos.com/2015/12/05/thinking/软件工程师的局限性/" data-id="cink9j7be0007dctsddiq5wid" class="article-share-link">
+      <a data-url="http://shanatos.com/2015/12/05/thinking/软件工程师的局限性/" data-id="cipcsr7z60007gwtsdbte86v9" class="article-share-link">
         <i class="fa fa-share"></i> Share
       </a>
       
@@ -366,7 +605,7 @@
     
 
     <footer class="article-footer">
-      <a data-url="http://shanatos.com/2015/11/18/thinking/mostImportantThingInPrograming/" data-id="cink9j7bo000rdctskapbknk6" class="article-share-link">
+      <a data-url="http://shanatos.com/2015/11/18/thinking/mostImportantThingInPrograming/" data-id="cipcsr7zi000rgwts1yedft4s" class="article-share-link">
         <i class="fa fa-share"></i> Share
       </a>
       
@@ -440,258 +679,12 @@
     
 
     <footer class="article-footer">
-      <a data-url="http://shanatos.com/2015/11/09/thinking/about_tools/" data-id="cink9j7bs000wdcts68jhulh8" class="article-share-link">
+      <a data-url="http://shanatos.com/2015/11/09/thinking/about_tools/" data-id="cipcsr7zk000wgwts21srfm7f" class="article-share-link">
         <i class="fa fa-share"></i> Share
       </a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/工具/">工具</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/思考/">思考</a></li></ul>
-
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-tips/sublime_plugins" class="article article-type-post" itemscope itemprop="blogPost">
-
-  <header class="article-header">
-    
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/11/09/tips/sublime_plugins/">sublime3使用帮助</a>
-    </h1>
-  
-
-
-  </header>
-
-  <div class="article-meta">
-    <div class="article-datetime">
-  <a href="/2015/11/09/tips/sublime_plugins/" class="article-date"><time datetime="2015-11-09T13:40:29.000Z" itemprop="datePublished">2015-11-09</time></a>
-</div>
-
-    
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/e/">参考</a>
-  </div>
-
-
-  </div>
-  <div class="article-inner">
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h2 id="package-control安装方法">package-control安装方法</h2><p>从菜单 View - Show Console 或者 ctrl + ~ 快捷键，调出 console。将以下 Python 代码粘贴进去并 enter 执行，不出意外即完成安装。以下提供 ST3 和 ST2 的安装代码：</p>
-<p>Sublime Text 3：<br><figure class="highlight gradle"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> urllib.request,os; pf = <span class="string">'Package Control.sublime-package'</span>; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); open(os.path.<span class="keyword">join</span>(ipp, pf), <span class="string">'wb'</span>).<span class="keyword">write</span>(urllib.request.urlopen( <span class="string">'http://sublime.wbond.net/'</span> + pf.replace(<span class="string">' '</span>,<span class="string">'%20'</span>)).<span class="keyword">read</span>())</span><br></pre></td></tr></table></figure></p>
-<p>Sublime Text 2：<br><figure class="highlight perl"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">import urllib2,os; pf=<span class="string">'Package Control.sublime-package'</span>; ipp = sublime.installed_packages_path(); os.makedirs( ipp ) <span class="keyword">if</span> <span class="keyword">not</span> os.path.<span class="keyword">exists</span>(ipp) <span class="keyword">else</span> None; urllib2.install_opener( urllib2.build_opener( urllib2.ProxyHandler( ))); <span class="keyword">open</span>( os.path.<span class="keyword">join</span>( ipp, pf), <span class="string">'wb'</span> ).<span class="keyword">write</span>( urllib2.urlopen( <span class="string">'http://sublime.wbond.net/'</span> +pf.replace( <span class="string">' '</span>,<span class="string">'%20'</span> )).<span class="keyword">read</span>()); <span class="keyword">print</span>( <span class="string">'Please restart Sublime Text to finish installation'</span>)</span><br></pre></td></tr></table></figure></p>
-<h2 id="解决光标不跟随问题">解决光标不跟随问题</h2><p>通过Package Control在线安装：安装Package Control插件（安装方法请自行搜索），通过Install Package选项列出插件列表，搜索IMESupport安装即可。</p>
-
-      
-    </div>
-
-    
-      
-
-    
-
-    <footer class="article-footer">
-      <a data-url="http://shanatos.com/2015/11/09/tips/sublime_plugins/" data-id="cink9j7b60000dcts0l46r6lq" class="article-share-link">
-        <i class="fa fa-share"></i> Share
-      </a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/sublime/">sublime</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/tools/">tools</a></li></ul>
-
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-thinking/thinkOfAction" class="article article-type-post" itemscope itemprop="blogPost">
-
-  <header class="article-header">
-    
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/11/05/thinking/thinkOfAction/">搞博客的目的</a>
-    </h1>
-  
-
-
-  </header>
-
-  <div class="article-meta">
-    <div class="article-datetime">
-  <a href="/2015/11/05/thinking/thinkOfAction/" class="article-date"><time datetime="2015-11-05T15:40:29.000Z" itemprop="datePublished">2015-11-05</time></a>
-</div>
-
-    
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/a/">生活</a>
-  </div>
-
-
-  </div>
-  <div class="article-inner">
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>乱了一天，自从自己博客真正搞起来了，发现自己就开始懒了，原本计划要了解hexo的原理这些事情就放下了，开始思索怎么样搞的漂亮些，却又不肯下功夫去学习hexo的文档。是不是真的有些急功近利呢？其实这篇也有一些碎碎念。</p>
-<h2 id="反思">反思</h2><p>所有的东西都是一个从无到有再到茂盛的过程，如今的独立博客建立起来非常容易，真正熟练以后可能一会儿的功夫就可以建立起自己的博客来。但是真的下一步就是美化自己的博客么？我还有很多事情要学习，要去做，真正建立这个博客的目的是什么？</p>
-<ul>
-<li>记录自己的代码，让这个地方作为自己的代码wiki</li>
-<li>总结技术经验，分享自己学习一些技术的经验</li>
-<li>督促自己多看书，多分享书</li>
-<li>反思自己日常的行为</li>
-<li>吐槽</li>
-</ul>
-<h2 id="最近">最近</h2><p>最近在学go语言，在总结自己的技能树，想方设法去完善自己。但是自己真真的有这么努力么？GO语言从上周六总结看书以来，没有什么实质性的进展，技能树也荒废了很久没有去做。自己还想总结一下GTD工具和思维导图如何去安排自己的工作和生活。实际上，我就是一个自制力比较差的人吧。<br>实际上我就是一个很LOW的人，我会自己默默记住一些别人说的经典的话，然后装作云淡风清地说出来。我在想让别人说你好厉害的同时，又担心别人只是逢场作戏地说这些。做不到不在乎别人的目光，却努力装出不在乎的样子。<br>其实这些没啥作用，还不如实实在在地，比如开个博客，比如写个工具，比如去炒个菜。所以我努力去做一些真正有结果的事情，而不是做一些没结果的东西。哪怕有一天，这个博客最终关闭掉，至少我还积累了写的这些文章。</p>
-<h2 id="突然想起以前">突然想起以前</h2><p>想起以前自己为了形象高大一些，曾经删除过QQ空间里面所有的文章，删除过人人网所有文章，尽管其中有不少我自以为的精华，有不少朋友同学的评论。觉得自己以前真的好蠢。</p>
-<h2 id="所以呢？">所以呢？</h2><p>做点实在的事情，总结自己的东西，分享一些干货，尽快让这个博客成长起来吧。</p>
-
-      
-    </div>
-
-    
-      
-
-    
-
-    <footer class="article-footer">
-      <a data-url="http://shanatos.com/2015/11/05/thinking/thinkOfAction/" data-id="cink9j7bl000odctsrccxy5aj" class="article-share-link">
-        <i class="fa fa-share"></i> Share
-      </a>
-      
-      
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-tech/thinkingAboutString" class="article article-type-post" itemscope itemprop="blogPost">
-
-  <header class="article-header">
-    
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/11/05/tech/thinkingAboutString/">从语言技巧(java-String)延伸的一些想法</a>
-    </h1>
-  
-
-
-  </header>
-
-  <div class="article-meta">
-    <div class="article-datetime">
-  <a href="/2015/11/05/tech/thinkingAboutString/" class="article-date"><time datetime="2015-11-05T15:40:29.000Z" itemprop="datePublished">2015-11-05</time></a>
-</div>
-
-    
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/c/">技术</a>
-  </div>
-
-
-  </div>
-  <div class="article-inner">
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <h1 id="关于语言的一些技巧">关于语言的一些技巧</h1><p>在写JAVA的时候经常被提醒要注意string这个类的用法，这个类有许多奇技淫巧，比如直接使用+拼接字符串不被推荐，原因是拼接字符串会有性能上的一些问题，会产生大量的字符串对象。所以我们被推荐使用StringBuffer去拼接，或者最近提到的StringBuilder去拼接。<br>每每用到这两个类，缩写往往是sb，这在中文词汇中，应该是要被和谐的词了。不过程序里面倒是经常用到这个。</p>
-<h2 id="这样做有什么好处和坏处">这样做有什么好处和坏处</h2><p>在JAVA中，使用这种类的好处在于它可以产生尽可能少的String对象，从而提升性能。<br>但是，我觉得使用+去拼接字符串，尽管会产生一些冗余的对象，但是可读性上却大大加强了。比如你写一个拼接的字符串<code>a + &quot;b&quot; + c</code>和<code>StringBuilder temp = new StringBuilder();temp.append(a).append(&quot;b&quot;).append(c)</code>。很明显第一个的程序方式简洁明了，而使用所谓的高效率方法，却会带来程序阅读上的困扰。</p>
-<h2 id="知道这个能给我带来什么">知道这个能给我带来什么</h2><p>当程序出现性能上面的问题的时候，我们使用这个技巧可以提升程序的性能。所以这个技巧仅仅在于当程序出现问题的时候，我们使用它，让程序跑得更加快速，更加健壮。<br>但是在程序没有性能的时候，我们更需要关注的是程序的可读性。只要程序没有说内存不足或是其他的，我们就应该认为程序的性能是足够的，不能为了程序的性能去抛弃程序的可读性。可读的代码是程序员最应该交付的代码。高性能的代码绝对不是第一次交付可以交付出来的，而是通过不断地进化进化而来的，这里的进化，指的是通过不断地测试，发现瓶颈，优化瓶颈的进化，而不是把所有的代码都写成高性能的代码。</p>
-<h2 id="高性能的代码是不必要的么？">高性能的代码是不必要的么？</h2><p>当然不是，我们应该尽量养成写高性能代码的习惯，前提是这种代码习惯不会给程序的阅读带来困扰。否则，就先写可读性强的代码，然后再去优化。所有的代码必须先完成其功能，面对其变更，然后才会有高性能，高可用性的要求。我们在写代码的时候，却经常忽略前两点，过分追求代码的性能。实际上，功能的完成才是最最重要的事情。<br>高性能的代码比如在初始化一个长度为1的列表的时候，我们给列表一个初始长度，可以大大提升创建的速度和减少占用的空间<code>new ArrayList(1)</code>。这种代码写下来就不会产生任何的误解，但是需要注意的是，如果后续维护的人不知道，又向这个列表中添加了元素，变成一个长度为2的列表了，那性能反而会大大降低。</p>
-<h2 id="再进一步">再进一步</h2><p>对于String的优化，我想过一个方案，我们目前的所有的写法，都是基于一个假设，就是假设虚拟机的实现是按照SUN的来实现的。但是，因为java是开源的，如果能修改这种初始的设定（前提是发现这种设定本身是不合理的），那是不是说我们可以放心大胆地去写String+String的这种代码呢？或者我们有代码优化器，将这种代码预先转换成我们指定的方式，是不是一步头解决了所有的问题？<br>其实也不是这样的，因为如果真正这样子改写了，对于一个公司的了解这件事情的java程序员来说，是更好的，但是对于外来的程序员，他们因为不了解这个历史，写出的代码仍然不会按照我们预计的样子去写的。<br>这让我想到以前的一个故事，具体不记得了，大意是这样的：有个木匠想做一块10×10的木料，因为这个木料有损耗，所以他算出了木料大概需要买12×12的木料,他就委托自己的一个木匠朋友帮他去买这个材料，这个木匠朋友想，做这个东西需要留2公分的预留，所以要买14×14的木料，于是给他买了14×14的木料回来。</p>
-<h2 id="结论">结论</h2><p>写可读的代码，之后再考虑程序的性能问题。先完成功能，再着力优化，过早的优化会带来不少隐患， 这种隐患可能是我们难以预计的。善意的行为，也会造成误解和隐患，尊重大众的习惯，尽量写可读的代码。</p>
-
-      
-    </div>
-
-    
-      
-
-    
-
-    <footer class="article-footer">
-      <a data-url="http://shanatos.com/2015/11/05/tech/thinkingAboutString/" data-id="cink9j7bx001adctsj3qoqjze" class="article-share-link">
-        <i class="fa fa-share"></i> Share
-      </a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/java/">java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/技术总结/">技术总结</a></li></ul>
-
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="no_side_bar-codes/前端/tabChange" class="article article-type-no_side_bar" itemscope itemprop="blogPost">
-
-  <header class="article-header">
-    
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2015/11/04/codes/前端/tabChange/">参考代码-前端-标签切换</a>
-    </h1>
-  
-
-
-  </header>
-
-  <div class="article-meta">
-    <div class="article-datetime">
-  <a href="/2015/11/04/codes/前端/tabChange/" class="article-date"><time datetime="2015-11-04T12:00:29.000Z" itemprop="datePublished">2015-11-04</time></a>
-</div>
-
-    
-    
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/e/">参考</a>
-  </div>
-
-
-  </div>
-  <div class="article-inner">
-
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>标签切换页面代码<br>
-        
-          <p class="article-more-link">
-            <a class="btn btn-primary" href="/2015/11/04/codes/前端/tabChange/#more">查看全文</a>
-          </p>
-        
-      
-    </div>
-
-    
-
-    <footer class="article-footer">
-      <a data-url="http://shanatos.com/2015/11/04/codes/前端/tabChange/" data-id="cink9j7c1001hdctsi7jpz8yz" class="article-share-link">
-        <i class="fa fa-share"></i> Share
-      </a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/code/">code</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/css/">css</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/html/">html</a></li></ul>
 
 
     </footer>
@@ -724,7 +717,7 @@
   
   <div class="sidebar-module">
     <h4>分类文章</h4>
-    <ul class="sidebar-module-list"><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/e/">参考</a><span class="sidebar-module-list-count">3</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/思考/">思考</a><span class="sidebar-module-list-count">3</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/c/">技术</a><span class="sidebar-module-list-count">3</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/a/">生活</a><span class="sidebar-module-list-count">2</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/d/">碎碎念</a><span class="sidebar-module-list-count">1</span></li></ul>
+    <ul class="sidebar-module-list"><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/e/">参考</a><span class="sidebar-module-list-count">3</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/思考/">思考</a><span class="sidebar-module-list-count">3</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/c/">技术</a><span class="sidebar-module-list-count">7</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/a/">生活</a><span class="sidebar-module-list-count">2</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/d/">碎碎念</a><span class="sidebar-module-list-count">1</span></li></ul>
   </div>
 
 
@@ -732,7 +725,7 @@
   
   <div class="sidebar-module">
     <h4>标签</h4>
-    <ul class="sidebar-module-list"><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/code/">code</a><span class="sidebar-module-list-count">2</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/css/">css</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/html/">html</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/java/">java</a><span class="sidebar-module-list-count">3</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/sublime/">sublime</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/tools/">tools</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/创新/">创新</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/工具/">工具</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/思考/">思考</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/技术总结/">技术总结</a><span class="sidebar-module-list-count">2</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/支付宝/">支付宝</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/编程/">编程</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/群论/">群论</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/逻辑层次/">逻辑层次</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/钢铁侠/">钢铁侠</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/问题分析/">问题分析</a><span class="sidebar-module-list-count">1</span></li></ul>
+    <ul class="sidebar-module-list"><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/RPC/">RPC</a><span class="sidebar-module-list-count">4</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/code/">code</a><span class="sidebar-module-list-count">2</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/css/">css</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/html/">html</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/java/">java</a><span class="sidebar-module-list-count">7</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/sublime/">sublime</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/tools/">tools</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/创新/">创新</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/工具/">工具</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/思考/">思考</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/技术总结/">技术总结</a><span class="sidebar-module-list-count">6</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/支付宝/">支付宝</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/框架/">框架</a><span class="sidebar-module-list-count">4</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/编程/">编程</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/群论/">群论</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/逻辑层次/">逻辑层次</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/钢铁侠/">钢铁侠</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/问题分析/">问题分析</a><span class="sidebar-module-list-count">1</span></li></ul>
   </div>
 
 
@@ -741,7 +734,7 @@
   <div class="sidebar-module">
     <h4>标签云</h4>
     <p class="tagcloud">
-      <a href="/tags/code/" style="font-size: 15px;">code</a> <a href="/tags/css/" style="font-size: 10px;">css</a> <a href="/tags/html/" style="font-size: 10px;">html</a> <a href="/tags/java/" style="font-size: 20px;">java</a> <a href="/tags/sublime/" style="font-size: 10px;">sublime</a> <a href="/tags/tools/" style="font-size: 10px;">tools</a> <a href="/tags/创新/" style="font-size: 10px;">创新</a> <a href="/tags/工具/" style="font-size: 10px;">工具</a> <a href="/tags/思考/" style="font-size: 10px;">思考</a> <a href="/tags/技术总结/" style="font-size: 15px;">技术总结</a> <a href="/tags/支付宝/" style="font-size: 10px;">支付宝</a> <a href="/tags/编程/" style="font-size: 10px;">编程</a> <a href="/tags/群论/" style="font-size: 10px;">群论</a> <a href="/tags/逻辑层次/" style="font-size: 10px;">逻辑层次</a> <a href="/tags/钢铁侠/" style="font-size: 10px;">钢铁侠</a> <a href="/tags/问题分析/" style="font-size: 10px;">问题分析</a>
+      <a href="/tags/RPC/" style="font-size: 15px;">RPC</a> <a href="/tags/code/" style="font-size: 12.5px;">code</a> <a href="/tags/css/" style="font-size: 10px;">css</a> <a href="/tags/html/" style="font-size: 10px;">html</a> <a href="/tags/java/" style="font-size: 20px;">java</a> <a href="/tags/sublime/" style="font-size: 10px;">sublime</a> <a href="/tags/tools/" style="font-size: 10px;">tools</a> <a href="/tags/创新/" style="font-size: 10px;">创新</a> <a href="/tags/工具/" style="font-size: 10px;">工具</a> <a href="/tags/思考/" style="font-size: 10px;">思考</a> <a href="/tags/技术总结/" style="font-size: 17.5px;">技术总结</a> <a href="/tags/支付宝/" style="font-size: 10px;">支付宝</a> <a href="/tags/框架/" style="font-size: 15px;">框架</a> <a href="/tags/编程/" style="font-size: 10px;">编程</a> <a href="/tags/群论/" style="font-size: 10px;">群论</a> <a href="/tags/逻辑层次/" style="font-size: 10px;">逻辑层次</a> <a href="/tags/钢铁侠/" style="font-size: 10px;">钢铁侠</a> <a href="/tags/问题分析/" style="font-size: 10px;">问题分析</a>
     </p>
   </div>
 
@@ -750,7 +743,7 @@
   
   <div class="sidebar-module">
     <h4>归档文章</h4>
-    <ul class="sidebar-module-list"><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2016/04/">四月 2016</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2016/03/">三月 2016</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2015/12/">十二月 2015</a><span class="sidebar-module-list-count">2</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2015/11/">十一月 2015</a><span class="sidebar-module-list-count">8</span></li></ul>
+    <ul class="sidebar-module-list"><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2016/05/">五月 2016</a><span class="sidebar-module-list-count">4</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2016/04/">四月 2016</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2016/03/">三月 2016</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2015/12/">十二月 2015</a><span class="sidebar-module-list-count">2</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2015/11/">十一月 2015</a><span class="sidebar-module-list-count">8</span></li></ul>
   </div>
 
 
@@ -761,23 +754,23 @@
     <ul class="sidebar-module-list">
       
         <li>
+          <a href="/2016/05/15/tech/RPC-framework/4/">一个简单的RPC框架-撮合</a>
+        </li>
+      
+        <li>
+          <a href="/2016/05/10/tech/RPC-framework/3/">一个简单的RPC框架-动态代理</a>
+        </li>
+      
+        <li>
+          <a href="/2016/05/01/tech/RPC-framework/1/">一个简单的RPC框架-导读</a>
+        </li>
+      
+        <li>
+          <a href="/2016/05/01/tech/RPC-framework/2/">一个简单的RPC框架-基础篇</a>
+        </li>
+      
+        <li>
           <a href="/2016/04/27/tech/信息系统问题排查/">信息系统问题排查</a>
-        </li>
-      
-        <li>
-          <a href="/2016/03/14/thinking/从《大众经济学》开始的思考/">从《大众经济学》开始的思考</a>
-        </li>
-      
-        <li>
-          <a href="/2015/12/25/thinking/从钢铁侠到支付宝/">从钢铁侠到支付宝</a>
-        </li>
-      
-        <li>
-          <a href="/2015/12/05/thinking/软件工程师的局限性/">软件工程师的局限性</a>
-        </li>
-      
-        <li>
-          <a href="/2015/11/18/thinking/mostImportantThingInPrograming/">编程最重要的是什么?</a>
         </li>
       
     </ul>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>一个简单的RPC框架-导读 | 韩帅-知行合一</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="最开始的时候，我们实现所有的业务功能，可以都集中在一个java类中，但是随着业务的不断复杂化，以及需求的变更，我们需要隔离各个模块之间的调用关系，让整体的逻辑不至于混乱，于是我们开始使用工程化的方式取管理我们的代码，之后使用多个工程组织代码，之后使用分布式的服务组织我们的逻辑。我们做的这一切，让变化被隔离起来，当业务需要变动的时候，可以在程序中更快地应用变动。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一个简单的RPC框架-导读">
+<meta property="og:url" content="http://shanatos.com/2016/05/01/tech/RPC-framework/1/index.html">
+<meta property="og:site_name" content="韩帅-知行合一">
+<meta property="og:description" content="最开始的时候，我们实现所有的业务功能，可以都集中在一个java类中，但是随着业务的不断复杂化，以及需求的变更，我们需要隔离各个模块之间的调用关系，让整体的逻辑不至于混乱，于是我们开始使用工程化的方式取管理我们的代码，之后使用多个工程组织代码，之后使用分布式的服务组织我们的逻辑。我们做的这一切，让变化被隔离起来，当业务需要变动的时候，可以在程序中更快地应用变动。">
+<meta property="og:updated_time" content="2016-06-12T16:17:27.535Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="一个简单的RPC框架-导读">
+<meta name="twitter:description" content="最开始的时候，我们实现所有的业务功能，可以都集中在一个java类中，但是随着业务的不断复杂化，以及需求的变更，我们需要隔离各个模块之间的调用关系，让整体的逻辑不至于混乱，于是我们开始使用工程化的方式取管理我们的代码，之后使用多个工程组织代码，之后使用分布式的服务组织我们的逻辑。我们做的这一切，让变化被隔离起来，当业务需要变动的时候，可以在程序中更快地应用变动。">
+  
+    <link rel="alternate" href="/atom.xml" title="韩帅-知行合一" type="application/atom+xml">
+  
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" integrity="sha384-XdYbMnZ/QjLh6iI4ogqCTaIjrFk87ip+ekIjefZch0Y+PvJ8CDYtEs1ipDmPorQ+" crossorigin="anonymous">
+
+  <link rel="stylesheet" href="/css/styles.css" type="text/css">
+
+  <script src="http://shanatos.com/js/jquery-2.2.3.min.js" integrity="sha384-8gBf6Y4YYq7Jx97PIqmTwLPin4hxIzQw5aDmUg/DDhul9fFpbbLcLh3nTIIDJKhx" crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <nav class="navbar navbar-inverse">
+  <div class="container">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#main-menu-navbar" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="main-menu-navbar">
+      <ul class="nav navbar-nav">
+        
+          <li><a class=""
+                 href="/index.html">首页</a></li>
+        
+          <li><a class=""
+                 href="/archives/">归档文章</a></li>
+        
+      </ul>
+
+      <!--
+      <ul class="nav navbar-nav navbar-right">
+        
+          <li><a href="/atom.xml" title="RSS Feed"><i class="fa fa-rss"></i></a></li>
+        
+      </ul>
+      -->
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
+
+  <div class="container">
+    <div class="blog-header">
+  <h1 class="blog-title">韩帅-知行合一</h1>
+  
+</div>
+
+    <div class="row">
+        <div class="col-sm-8 blog-main">
+          <article id="post-tech/RPC-framework/1" class="article article-type-post" itemscope itemprop="blogPost">
+
+  <header class="article-header">
+    
+  
+    <h1 class="article-title" itemprop="name">
+      一个简单的RPC框架-导读
+    </h1>
+  
+
+
+  </header>
+
+  <div class="article-meta">
+    <div class="article-datetime">
+  <a href="/2016/05/01/tech/RPC-framework/1/" class="article-date"><time datetime="2016-04-30T16:00:00.000Z" itemprop="datePublished">2016-05-01</time></a>
+</div>
+
+    
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/c/">技术</a>
+  </div>
+
+
+  </div>
+  <div class="article-inner">
+
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>最开始的时候，我们实现所有的业务功能，可以都集中在一个java类中，但是随着业务的不断复杂化，以及需求的变更，我们需要隔离各个模块之间的调用关系，让整体的逻辑不至于混乱，于是我们开始使用工程化的方式取管理我们的代码，之后使用多个工程组织代码，之后使用分布式的服务组织我们的逻辑。我们做的这一切，让变化被隔离起来，当业务需要变动的时候，可以在程序中更快地应用变动。<br><a id="more"></a><br>架构总是在不断演进，我们也在不断进步。每天新的知识不停地进入我们的视野中，我们更需要孜孜不倦得学习。以前有句话叫“弃先王之成法而法其所以为法”，在java学习中，我们不停地在接触各种各样的框架，但是这些框架还是层出不穷，不论是java的还是js的。在不断接触这些框架的时候，我时常在思考，这些框架的原理到底是什么？</p>
+<p>所以我准备写一个如何山寨一个框架的系列文章，这个系列的目标，就是从一些java基础的用法逐渐提高到一个框架，再完善这个框架，到一个精简的方式。对于一些技术细节，可能会忽略掉，简单地从用法上去讲解如何制作一个RPC框架，在学习之外需要读者对感兴趣的技术细节自行学习，比如什么是TCP协议，Socket是什么，Zookeeper，NIO。如果有时间，我会不断完善这个系列。</p>
+
+      
+    </div>
+
+    
+      
+
+    
+
+    <footer class="article-footer">
+      <a data-url="http://shanatos.com/2016/05/01/tech/RPC-framework/1/" data-id="cipcsr804001ygwtsrlezinlw" class="article-share-link">
+        <i class="fa fa-share"></i> Share
+      </a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/RPC/">RPC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/java/">java</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/技术总结/">技术总结</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/框架/">框架</a></li></ul>
+
+
+    </footer>
+  </div>
+  
+    
+<ul id="article-nav" class="nav nav-pills nav-justified">
+  
+  <li role="presentation">
+    <a href="/2016/05/01/tech/RPC-framework/2/" id="article-nav-older" class="article-nav-link-wrap">
+      <i class="fa fa-chevron-left pull-left"></i>
+      <span class="article-nav-link-title">一个简单的RPC框架-基础篇</span>
+    </a>
+  </li>
+  
+  
+  <li role="presentation">
+    <a href="/2016/05/10/tech/RPC-framework/3/" id="article-nav-newer" class="article-nav-link-wrap">
+      <span class="article-nav-link-title">一个简单的RPC框架-动态代理</span>
+      <i class="fa fa-chevron-right pull-right"></i>
+    </a>
+  </li>
+  
+</ul>
+
+
+  
+</article>
+
+
+
+
+        </div>
+        
+          <div class="col-sm-3 col-sm-offset-1 blog-sidebar">
+            
+  <div class="sidebar-module sidebar-module-inset">
+  <h4>关于我</h4>
+  <p>一个没有脱离低级趣味的人，一只程序猿，喜欢读书，喜欢玩游戏</p>
+
+</div>
+
+
+  
+  <div class="sidebar-module">
+    <h4>分类文章</h4>
+    <ul class="sidebar-module-list"><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/e/">参考</a><span class="sidebar-module-list-count">3</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/思考/">思考</a><span class="sidebar-module-list-count">3</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/c/">技术</a><span class="sidebar-module-list-count">7</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/a/">生活</a><span class="sidebar-module-list-count">2</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/categories/d/">碎碎念</a><span class="sidebar-module-list-count">1</span></li></ul>
+  </div>
+
+
+
+  
+  <div class="sidebar-module">
+    <h4>标签</h4>
+    <ul class="sidebar-module-list"><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/RPC/">RPC</a><span class="sidebar-module-list-count">4</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/code/">code</a><span class="sidebar-module-list-count">2</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/css/">css</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/html/">html</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/java/">java</a><span class="sidebar-module-list-count">7</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/sublime/">sublime</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/tools/">tools</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/创新/">创新</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/工具/">工具</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/思考/">思考</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/技术总结/">技术总结</a><span class="sidebar-module-list-count">6</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/支付宝/">支付宝</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/框架/">框架</a><span class="sidebar-module-list-count">4</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/编程/">编程</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/群论/">群论</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/逻辑层次/">逻辑层次</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/钢铁侠/">钢铁侠</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/tags/问题分析/">问题分析</a><span class="sidebar-module-list-count">1</span></li></ul>
+  </div>
+
+
+
+  
+  <div class="sidebar-module">
+    <h4>标签云</h4>
+    <p class="tagcloud">
+      <a href="/tags/RPC/" style="font-size: 15px;">RPC</a> <a href="/tags/code/" style="font-size: 12.5px;">code</a> <a href="/tags/css/" style="font-size: 10px;">css</a> <a href="/tags/html/" style="font-size: 10px;">html</a> <a href="/tags/java/" style="font-size: 20px;">java</a> <a href="/tags/sublime/" style="font-size: 10px;">sublime</a> <a href="/tags/tools/" style="font-size: 10px;">tools</a> <a href="/tags/创新/" style="font-size: 10px;">创新</a> <a href="/tags/工具/" style="font-size: 10px;">工具</a> <a href="/tags/思考/" style="font-size: 10px;">思考</a> <a href="/tags/技术总结/" style="font-size: 17.5px;">技术总结</a> <a href="/tags/支付宝/" style="font-size: 10px;">支付宝</a> <a href="/tags/框架/" style="font-size: 15px;">框架</a> <a href="/tags/编程/" style="font-size: 10px;">编程</a> <a href="/tags/群论/" style="font-size: 10px;">群论</a> <a href="/tags/逻辑层次/" style="font-size: 10px;">逻辑层次</a> <a href="/tags/钢铁侠/" style="font-size: 10px;">钢铁侠</a> <a href="/tags/问题分析/" style="font-size: 10px;">问题分析</a>
+    </p>
+  </div>
+
+
+
+  
+  <div class="sidebar-module">
+    <h4>归档文章</h4>
+    <ul class="sidebar-module-list"><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2016/05/">五月 2016</a><span class="sidebar-module-list-count">4</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2016/04/">四月 2016</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2016/03/">三月 2016</a><span class="sidebar-module-list-count">1</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2015/12/">十二月 2015</a><span class="sidebar-module-list-count">2</span></li><li class="sidebar-module-list-item"><a class="sidebar-module-list-link" href="/archives/2015/11/">十一月 2015</a><span class="sidebar-module-list-count">8</span></li></ul>
+  </div>
+
+
+
+  
+  <div class="sidebar-module">
+    <h4>最近文章</h4>
+    <ul class="sidebar-module-list">
+      
+        <li>
+          <a href="/2016/05/15/tech/RPC-framework/4/">一个简单的RPC框架-撮合</a>
+        </li>
+      
+        <li>
+          <a href="/2016/05/10/tech/RPC-framework/3/">一个简单的RPC框架-动态代理</a>
+        </li>
+      
+        <li>
+          <a href="/2016/05/01/tech/RPC-framework/1/">一个简单的RPC框架-导读</a>
+        </li>
+      
+        <li>
+          <a href="/2016/05/01/tech/RPC-framework/2/">一个简单的RPC框架-基础篇</a>
+        </li>
+      
+        <li>
+          <a href="/2016/04/27/tech/信息系统问题排查/">信息系统问题排查</a>
+        </li>
+      
+    </ul>
+  </div>
+
+
+
+
+          </div>
+        
+    </div>
+  </div>
+  <footer class="blog-footer">
+  <div class="container">
+    <div id="footer-info" class="inner">
+      &copy; 2016 [object Object]<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+  
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+
+
+<script src="/js/script.js" type="text/javascript"></script>
+
+</body>
+</html>
